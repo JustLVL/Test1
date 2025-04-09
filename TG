@@ -1,2 +1,44 @@
-git clone https://github.com/JustLVL/Test1.git
-cd Test1
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Выбор варианта</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <h1>Выберите вариант:</h1>
+
+    <button id="option1Button">Вариант 1</button>
+    <button id="option2Button">Вариант 2</button>
+
+    <div id="result"></div>
+
+    <script>
+        Telegram.WebApp.ready(); // Инициализация TWA
+
+        const option1Button = document.getElementById('option1Button');
+        const option2Button = document.getElementById('option2Button');
+        const resultDiv = document.getElementById('result');
+
+        option1Button.addEventListener('click', function() {
+            const selectedOption = "Вариант 1";
+            resultDiv.textContent = `Вы выбрали: ${selectedOption}`;
+            Telegram.WebApp.sendData(selectedOption); // Отправляем выбранный вариант боту
+        });
+
+        option2Button.addEventListener('click', function() {
+            const selectedOption = "Вариант 2";
+            resultDiv.textContent = `Вы выбрали: ${selectedOption}`;
+            Telegram.WebApp.sendData(selectedOption); // Отправляем выбранный вариант боту
+        });
+    </script>
+</body>
+</html>
