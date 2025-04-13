@@ -75,24 +75,24 @@
 
     <div class="form-group">
         <label for="length">Длина (см):</label>
-        <input type="number" id="length" placeholder="Длина">
+        <input type="number" id="length" placeholder="Длина" min="0">
     </div>
 
     <div class="form-group">
         <label for="width">Ширина (см):</label>
-        <input type="number" id="width" placeholder="Ширина">
+        <input type="number" id="width" placeholder="Ширина" min="0">
     </div>
 
     <div class="form-group">
         <label for="height">Высота (см):</label>
-        <input type="number" id="height" placeholder="Высота">
+        <input type="number" id="height" placeholder="Высота" min="0">
     </div>
 
     <div id="result"></div>
 
     <div class="form-group">
         <label for="quantity">Количество товара:</label>
-        <input type="number" id="quantity" placeholder="Количество">
+        <input type="number" id="quantity" placeholder="Количество" min="0">
     </div>
 
     <div class="checkbox-group">
@@ -137,6 +137,14 @@
             const width = parseFloat(widthInput.value);
             const height = parseFloat(heightInput.value);
 
+           if (length < 0 || width < 0 || height < 0) {
+                resultDiv.textContent = "Размеры товара не могут быть отрицательными.";
+                totalDiv.textContent = "";
+                deliveryCreationCostDiv.textContent = "";
+                totalVolumeDiv.textContent = "";
+                return NaN;
+            }
+
             if (isNaN(length) || isNaN(width) || isNaN(height)) {
                 resultDiv.textContent = "Введите размеры товара.";
                 totalDiv.textContent = "";
@@ -165,6 +173,14 @@
             let discount = 0;
             let deliveryCost = 0;
             const quantity = parseFloat(quantityInput.value);
+
+             if (quantity < 0) {
+                totalDiv.textContent = "";
+                deliveryCreationCostDiv.textContent = "";
+                totalVolumeDiv.textContent = "";
+                 resultDiv.textContent = "Количество не может быть отрицательным";
+                return
+            }
 
             if (quantity >= 500 && quantity < 1000) {
                 discount = 0.05;
@@ -234,6 +250,13 @@
             const height = parseFloat(heightInput.value);
             const quantity = parseFloat(quantityInput.value);
 
+           if (length < 0 || width < 0 || height < 0) {
+                resultDiv.textContent = "Размеры товара не могут быть отрицательными.";
+
+                return ;
+            }
+
+
             if (isNaN(length) || isNaN(width) || isNaN(height)) {
                 resultDiv.textContent = "Пожалуйста, введите корректные значения для длины, ширины и высоты.";
                 return;
@@ -288,6 +311,7 @@
             }
 
             const totalVolumePrice = (discountedPrice * quantity) + deliveryCost;
+
 
             // Формируем строку с доп. услугами
             let services = "";
