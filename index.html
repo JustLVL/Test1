@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Заявка на упаковку</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,8 +44,10 @@
             color: #fff;
             border: 1px solid #555;
             box-sizing: border-box;
-            pattern: "[0-9]*"; /* Только цифры */
-            inputmode: numeric; /* Цифровая клавиатура */
+            pattern: "[0-9]*";
+            /* Только цифры */
+            inputmode: numeric;
+            /* Цифровая клавиатура */
         }
 
         button {
@@ -97,11 +100,28 @@
 
         #total,
         #deliveryCreationCost,
-        #totalVolume {
-            margin-top: 20px;
-            font-size: 1.4em;
+        #totalVolume,
+        #completingCost,
+        #qualityCheckCost,
+        #additionalLabelsCost,
+        #storageCost,
+        #fbsCost {
+            margin-top: 10px;
+            font-size: 1.2em;
             color: #fff;
             font-weight: bold;
+            display: none;
+            /* Hide by default, will be shown by JS */
+        }
+
+        #results-container {
+            text-align: left;
+            /* Выравниваем текст по левому краю */
+            max-width: 400px;
+            /* Задаем максимальную ширину, как и для формы */
+            margin-left: auto;
+            margin-right: auto;
+            /* Центрируем контейнер по горизонтали */
         }
 
         .input-grid {
@@ -151,6 +171,7 @@
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
+
 <body>
     <h1>Заявка на упаковку</h1>
 
@@ -164,17 +185,17 @@
 
         <div class="form-group">
             <label for="width">Ширина (см):</label>
-            <input type="number" id="width" placeholder="Ширина" min="0"  pattern="[0-9]*" inputmode="numeric">
+            <input type="number" id="width" placeholder="Ширина" min="0" pattern="[0-9]*" inputmode="numeric">
         </div>
 
         <div class="form-group">
             <label for="height">Высота (см):</label>
-            <input type="number" id="height" placeholder="Высота" min="0"  pattern="[0-9]*" inputmode="numeric">
+            <input type="number" id="height" placeholder="Высота" min="0" pattern="[0-9]*" inputmode="numeric">
         </div>
 
         <div class="form-group">
             <label for="quantity">Количество товара:</label>
-            <input type="number" id="quantity" placeholder="Количество" min="0"  pattern="[0-9]*" inputmode="numeric">
+            <input type="number" id="quantity" placeholder="Количество" min="0" pattern="[0-9]*" inputmode="numeric">
         </div>
     </div>
 
@@ -183,12 +204,12 @@
         <input type="checkbox" id="completing" style="display:none;">
 
         <button type="button" class="checkbox-button" data-checkbox="qualityCheck">Полная проверка на брак 10р</button>
-         <input type="checkbox" id="qualityCheck" style="display:none;">
+        <input type="checkbox" id="qualityCheck" style="display:none;">
 
         <button type="button" class="checkbox-button" data-checkbox="additionalLabels">Доп. Этикетки 5р</button>
         <input type="checkbox" id="additionalLabels" style="display:none;">
 
-         <button type="button" class="checkbox-button" data-checkbox="deliveryCreation">Создание поставки в ЛК 500р</button>
+        <button type="button" class="checkbox-button" data-checkbox="deliveryCreation">Создание поставки в ЛК 500р</button>
         <input type="checkbox" id="deliveryCreation" style="display:none;">
     </div>
 
@@ -204,9 +225,16 @@
 
     <button id="sendButton">Отправить</button>
 
-    <div id="total"></div>
-    <div id="deliveryCreationCost"></div>
-    <div id="totalVolume"></div>
+    <div id="results-container">
+        <div id="total"></div>
+        <div id="deliveryCreationCost"></div>
+        <div id="completingCost"></div>
+        <div id="qualityCheckCost"></div>
+        <div id="additionalLabelsCost"></div>
+        <div id="storageCost"></div>
+        <div id="fbsCost"></div>
+        <div id="totalVolume"></div>
+    </div>
 
     <!-- Модальное окно -->
     <div id="myModal" class="modal">
@@ -233,12 +261,12 @@
 
         const checkboxButtons = document.querySelectorAll('.checkbox-button');
         checkboxButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const checkboxId = this.dataset.checkbox;
                 const checkbox = document.getElementById(checkboxId);
                 checkbox.checked = !checkbox.checked;
                 this.classList.toggle('active');
-                 calculateTotal();
+                calculateTotal();
             });
         });
 
@@ -247,16 +275,21 @@
         const totalDiv = document.getElementById('total');
         const deliveryCreationCostDiv = document.getElementById('deliveryCreationCost');
         const totalVolumeDiv = document.getElementById('totalVolume');
+        const completingCostDiv = document.getElementById('completingCost');
+        const qualityCheckCostDiv = document.getElementById('qualityCheckCost');
+        const additionalLabelsCostDiv = document.getElementById('additionalLabelsCost');
+        const storageCostDiv = document.getElementById('storageCost');
+        const fbsCostDiv = document.getElementById('fbsCost');
 
-         // Get the modal
+        // Get the modal
         const modal = document.getElementById("myModal");
         const closeModalBtn = document.getElementById("closeModalBtn");
 
-        closeModalBtn.onclick = function() {
+        closeModalBtn.onclick = function () {
             modal.style.display = "none";
             location.reload();
         }
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             if (event.target == modal) {
                 modal.style.display = "none";
             }
@@ -269,48 +302,43 @@
 
             if (length < 0 || width < 0 || height < 0) {
                 resultDiv.textContent = "Размеры товара не могут быть отрицательными.";
-                totalDiv.textContent = "";
-                deliveryCreationCostDiv.textContent = "";
-                totalVolumeDiv.textContent = "";
                 return NaN;
             }
 
             if (isNaN(length) || isNaN(width) || isNaN(height)) {
                 resultDiv.textContent = "Введите размеры товара.";
-                totalDiv.textContent = "";
-                deliveryCreationCostDiv.textContent = "";
-                totalVolumeDiv.textContent = "";
                 return NaN;
             }
 
             const volume = (length * width * height) / 1000;
             resultDiv.textContent = `Объем товара: ${volume.toFixed(2)} литров`;
-
             return volume;
         }
 
         function calculateTotal() {
-            const volume = calculateVolume();
-            if (isNaN(volume)) {
-                totalDiv.textContent = "";
-                deliveryCreationCostDiv.textContent = "";
-                totalVolumeDiv.textContent = "";
+            let volume = calculateVolume();
+            let quantity = parseFloat(quantityInput.value);
+
+            if (isNaN(volume) || isNaN(quantity)) {
+                totalDiv.style.display = "none";
+                deliveryCreationCostDiv.style.display = "none";
+                completingCostDiv.style.display = "none";
+                qualityCheckCostDiv.style.display = "none";
+                additionalLabelsCostDiv.style.display = "none";
+                storageCostDiv.style.display = "none";
+                fbsCostDiv.style.display = "none";
+                totalVolumeDiv.style.display = "none";
+                return;
+            }
+
+            if (quantity < 0) {
+                resultDiv.textContent = "Количество не может быть отрицательным";
                 return;
             }
 
             let totalPriceText = "";
             let totalPrice = 0;
             let discount = 0;
-            let deliveryCost = 0;
-            const quantity = parseFloat(quantityInput.value);
-
-             if (quantity < 0) {
-                totalDiv.textContent = "";
-                deliveryCreationCostDiv.textContent = "";
-                totalVolumeDiv.textContent = "";
-                 resultDiv.textContent = "Количество не может быть отрицательным";
-                return
-            }
 
             if (quantity >= 500 && quantity < 1000) {
                 discount = 0.05;
@@ -337,27 +365,73 @@
                 totalPriceText = "Комплекс XXL: ";
             }
 
-            if (completingCheckbox.checked) totalPrice += 4;
-            if (qualityCheckCheckbox.checked) totalPrice += 10;
-            if (additionalLabelsCheckbox.checked) totalPrice += 5;
+            let completingCost = completingCheckbox.checked ? 4 * quantity : 0;
+            let qualityCheckCost = qualityCheckCheckbox.checked ? 10 * quantity : 0;
+            let additionalLabelsCost = additionalLabelsCheckbox.checked ? 5 * quantity : 0;
+            let storageCost = storageCheckbox.checked ? 0.05 * volume * quantity : 0;
+            let deliveryCost = deliveryCreationCheckbox.checked ? 500 : 0;
+            let fbsCost = 0;
 
+            // Calculate the discounted price per item
             const discountedPrice = totalPrice * (1 - discount);
 
-            if (deliveryCreationCheckbox.checked) {
-                deliveryCost = 500;
-            } else {
-                deliveryCost = 0;
+            // Calculate the base cost *before* FBS
+            let basePrice = (discountedPrice * quantity) + deliveryCost + completingCost + qualityCheckCost + additionalLabelsCost + storageCost;
+
+
+            if (fbsCheckbox.checked) {
+                fbsCost = basePrice * 0.15; // 15% of the total price
             }
 
-            const totalVolumePrice = (discountedPrice * quantity) + deliveryCost;
+            let totalVolumePrice = basePrice + fbsCost;
 
             totalDiv.textContent = "Тариф: " + totalPriceText + discountedPrice.toFixed(2) + " руб. за 1 шт.";
+            totalDiv.style.display = "block";
+
             if (deliveryCreationCheckbox.checked) {
                 deliveryCreationCostDiv.textContent = "Создание поставки: " + deliveryCost + " руб.";
+                deliveryCreationCostDiv.style.display = "block";
             } else {
-                deliveryCreationCostDiv.textContent = ``;
+                deliveryCreationCostDiv.style.display = "none";
             }
-            totalVolumeDiv.textContent = "Весь объем: " + totalVolumePrice.toFixed(2) + " руб.";
+
+            if (completingCheckbox.checked) {
+                completingCostDiv.textContent = "Комплектовка: " + completingCost.toFixed(2) + " руб.";
+                completingCostDiv.style.display = "block";
+            } else {
+                completingCostDiv.style.display = "none";
+            }
+
+            if (qualityCheckCheckbox.checked) {
+                qualityCheckCostDiv.textContent = "Полная проверка на брак: " + qualityCheckCost.toFixed(2) + " руб.";
+                qualityCheckCostDiv.style.display = "block";
+            } else {
+                qualityCheckCostDiv.style.display = "none";
+            }
+
+            if (additionalLabelsCheckbox.checked) {
+                additionalLabelsCostDiv.textContent = "Доп. Этикетки: " + additionalLabelsCost.toFixed(2) + " руб.";
+                additionalLabelsCostDiv.style.display = "block";
+            } else {
+                additionalLabelsCostDiv.style.display = "none";
+            }
+
+            if (storageCheckbox.checked) {
+                storageCostDiv.textContent = "Хранение: " + storageCost.toFixed(2) + " руб.";
+                storageCostDiv.style.display = "block";
+            } else {
+                storageCostDiv.style.display = "none";
+            }
+
+            if (fbsCheckbox.checked) {
+                fbsCostDiv.textContent = "ФБС: " + fbsCost.toFixed(2) + " руб.";
+                fbsCostDiv.style.display = "block";
+            } else {
+                fbsCostDiv.style.display = "none";
+            }
+
+            totalVolumeDiv.innerHTML = "<b>Стоимость итого:</b> " + totalVolumePrice.toFixed(2) + " руб.";
+            totalVolumeDiv.style.display = "block";
         }
 
         lengthInput.addEventListener('input', calculateTotal);
@@ -372,7 +446,7 @@
         fbsCheckbox.addEventListener('change', calculateTotal);
         deliveryCreationCheckbox.addEventListener('change', calculateTotal);
 
-        sendButton.addEventListener('click', function() {
+        sendButton.onclick = function () {
             const length = parseFloat(lengthInput.value);
             const width = parseFloat(widthInput.value);
             const height = parseFloat(heightInput.value);
@@ -395,64 +469,11 @@
             const volume = calculateVolume();
             if (isNaN(volume)) return;
 
-            let totalPriceText = "";
-            let totalPrice = 0;
-            let discount = 0;
-            let deliveryCost = 0;
-
-            if (quantity >= 500 && quantity < 1000) {
-                discount = 0.05;
-            } else if (quantity >= 1000 && quantity < 2000) {
-                discount = 0.10;
-            } else if (quantity >= 2000) {
-                discount = 0.20;
-            }
-
-            if (volume <= 1) {
-                totalPrice = 30;
-                totalPriceText = "Комплекс S: ";
-            } else if (volume > 1 && volume <= 5) {
-                totalPrice = 40;
-                totalPriceText = "Комплекс M: ";
-            } else if (volume > 5 && volume <= 15) {
-                totalPrice = 50;
-                totalPriceText = "Комплекс L: ";
-            } else if (volume > 15 && volume <= 40) {
-                totalPrice = 60;
-                totalPriceText = "Комплекс XL: ";
-            } else if (volume > 40 && volume <= 90) {
-                totalPrice = 80;
-                totalPriceText = "Комплекс XXL: ";
-            }
-
-            if (completingCheckbox.checked) totalPrice += 4;
-            if (qualityCheckCheckbox.checked) totalPrice += 10;
-            if (additionalLabelsCheckbox.checked) totalPrice += 5;
-
-            const discountedPrice = totalPrice * (1 - discount);
-
-            if (deliveryCreationCheckbox.checked) {
-                deliveryCost = 500;
-            } else {
-                deliveryCost = 0;
-            }
-
-            const totalVolumePrice = (discountedPrice * quantity) + deliveryCost;
-
-            // Формируем строку с доп. услугами
-            let services = "";
-            if (completingCheckbox.checked) services += ", Комплектовка";
-            if (qualityCheckCheckbox.checked) services += ", Полная проверка на брак";
-            if (additionalLabelsCheckbox.checked) services += ", Доп. Этикетки";
-            if (storageCheckbox.checked) services += ", Хранение";
-            if (fbsCheckbox.checked) services += ", ФБС";
-            if (deliveryCreationCheckbox.checked) services += ", Создание поставки";
-
-            const data = `Длина: ${length}, Ширина: ${width}, Высота: ${height}, Объем: ${volume.toFixed(2)} литров, Количество: ${quantity}, Тариф: ${totalPriceText}${discountedPrice.toFixed(2)} руб. за 1 шт., Создание поставки: ${deliveryCost} руб, Весь объем: ${totalVolumePrice.toFixed(2)} руб.${services}`;
-
-            // Отображаем модальное окно
+            // Вызываем calculateTotal() перед открытием модального окна
+            calculateTotal();
             modal.style.display = "block";
-        });
+        }
     </script>
 </body>
+
 </html>
